@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>i-DevR Code</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <div id="payment-form">
+        <div id="payment-element"></div>
+        <button id="submit">Pay</button>
+        <div id="error-message"></div>
+    </div>
+
+    <script>
+        const stripe = Stripe("pk_test_TYooMQauvdEDq54NiTphI7jx");
+        let elements;
+
+        async function initialize() {
+            const response = await fetch("/create-payment-intent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount: 99900 })
+            });
+            const { clientSecret } = await response.json();
+
+            elements = stripe.elements({ clientSecret });
+            const paymentElement = elements.create("payment");
+            paymentElement.mount("#payment-element");
+        }
+
+        initialize();
+
+        document.querySelector("#payment-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const { error } = await stripe.confirmPayment({
+                elements,
+                confirmParams: {
+                    return_url: window.location.origin + "/payment-confirmation"
+                }
+            });
+            if (error) {
+                const messageDiv = document.querySelector("#error-message");
+                messageDiv.textContent = error.message;
+            }
+        });
+    </script>
+</body>
+</html>
